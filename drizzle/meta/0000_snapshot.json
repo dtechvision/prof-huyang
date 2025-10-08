@@ -4,92 +4,13 @@
   "version": "7",
   "dialect": "postgresql",
   "tables": {
-    "public.casts": {
-      "name": "casts",
-      "schema": "",
-      "columns": {
-        "fid": {
-          "name": "fid",
-          "type": "bigint",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "hash": {
-          "name": "hash",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "timestamp": {
-          "name": "timestamp",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "embeds": {
-          "name": "embeds",
-          "type": "jsonb[]",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "parent_cast_url": {
-          "name": "parent_cast_url",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "parent_cast_fid": {
-          "name": "parent_cast_fid",
-          "type": "bigint",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "parent_cast_hash": {
-          "name": "parent_cast_hash",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "text": {
-          "name": "text",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "mentions": {
-          "name": "mentions",
-          "type": "integer[]",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "mentions_positions": {
-          "name": "mentions_positions",
-          "type": "integer[]",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "deleted_at": {
-          "name": "deleted_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {},
-      "policies": {},
-      "isRLSEnabled": false
-    },
     "public.links": {
       "name": "links",
       "schema": "",
       "columns": {
         "fid": {
           "name": "fid",
-          "type": "bigint",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
@@ -99,9 +20,15 @@
           "primaryKey": false,
           "notNull": false
         },
+        "signer": {
+          "name": "signer",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "target_fid": {
           "name": "target_fid",
-          "type": "bigint",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
@@ -132,7 +59,7 @@
       "columns": {
         "fid": {
           "name": "fid",
-          "type": "bigint",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
@@ -142,9 +69,15 @@
           "primaryKey": false,
           "notNull": false
         },
+        "signer": {
+          "name": "signer",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "target_cast_fid": {
           "name": "target_cast_fid",
-          "type": "bigint",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
@@ -181,7 +114,7 @@
       "columns": {
         "fid": {
           "name": "fid",
-          "type": "bigint",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
@@ -193,6 +126,12 @@
         },
         "custody_address": {
           "name": "custody_address",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "signer": {
+          "name": "signer",
           "type": "text",
           "primaryKey": false,
           "notNull": false
@@ -212,13 +151,122 @@
       "policies": {},
       "isRLSEnabled": false
     },
+    "public.casts": {
+      "name": "casts",
+      "schema": "",
+      "columns": {
+        "fid": {
+          "name": "fid",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "hash": {
+          "name": "hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "timestamp": {
+          "name": "timestamp",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "signer": {
+          "name": "signer",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "embeds": {
+          "name": "embeds",
+          "type": "jsonb[]",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "parent_cast_url": {
+          "name": "parent_cast_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "parent_cast_fid": {
+          "name": "parent_cast_fid",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "parent_cast_hash": {
+          "name": "parent_cast_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "text": {
+          "name": "text",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "mentions": {
+          "name": "mentions",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "mentions_positions": {
+          "name": "mentions_positions",
+          "type": "integer[]",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "casts_fid_timestamp_idx": {
+          "name": "casts_fid_timestamp_idx",
+          "columns": [
+            {
+              "expression": "fid",
+              "asc": true,
+              "nulls": "last",
+              "opclass": "text_ops",
+              "isExpression": false
+            },
+            {
+              "expression": "timestamp",
+              "asc": false,
+              "nulls": "first",
+              "opclass": "text_ops",
+              "isExpression": false
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {},
+      "policies": {},
+      "isRLSEnabled": false
+    },
     "public.verifications": {
       "name": "verifications",
       "schema": "",
       "columns": {
         "fid": {
           "name": "fid",
-          "type": "bigint",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
@@ -231,6 +279,12 @@
         "timestamp": {
           "name": "timestamp",
           "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "signer": {
+          "name": "signer",
+          "type": "text",
           "primaryKey": false,
           "notNull": false
         },
@@ -273,7 +327,7 @@
           "mentions": {
             "isArray": true,
             "dimensions": 0,
-            "rawType": "integer"
+            "rawType": "text"
           },
           "mentions_positions": {
             "isArray": true,
