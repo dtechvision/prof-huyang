@@ -3,8 +3,14 @@
   "module": "index.ts",
   "type": "module",
   "private": true,
+  "scripts": {
+    "pg-dump": "bun run index.ts pg-dump",
+    "parquet": "bun run index.ts parquet",
+    "all": "bun run index.ts all"
+  },
   "devDependencies": {
     "@types/bun": "latest",
+    "@types/node": "^24.8.0",
     "@types/pg": "^8.15.5",
     "drizzle-kit": "^0.31.5"
   },
@@ -14,6 +20,7 @@
   "dependencies": {
     "dotenv": "^17.2.3",
     "drizzle-orm": "^0.44.6",
+    "parquets": "^0.10.10",
     "pg": "^8.16.3"
   }
 }
