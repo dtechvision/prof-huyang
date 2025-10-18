@@ -203,14 +203,46 @@ async function exportParquet(options: ParquetOptions) {
 
   console.log(`Exporting database to Parquet using DuckDB...`);
 
-  const duckdbCommand = `
+  // First, get the list of tables
+  const getTablesCommand = `
     INSTALL postgres;
     LOAD postgres;
     ATTACH '${databaseUrl}' AS pg (TYPE POSTGRES);
-    EXPORT DATABASE '${outDir}' (FORMAT PARQUET, COMPRESSION ZSTD);
+    SELECT table_name FROM information_schema.tables
+    WHERE table_schema = 'public'
+    AND table_type = 'BASE TABLE';
   `.trim().replace(/\n\s+/g, ' ');
 
-  await $`duckdb -c ${duckdbCommand}`;
+  const result = await $`duckdb -csv -c ${getTablesCommand}`.text();
+  const tables = result
+    .split('\n')
+    .slice(1) // Skip header
+    .map(line => line.trim())
+    .filter(line => line.length > 0);
+
+  if (tables.length === 0) {
+    throw new Error('No tables found in the public schema');
+  }
+
+  console.log(`Found ${tables.length} tables: ${tables.join(', ')}`);
+
+  // Export each table to parquet
+  for (const table of tables) {
+    const outputPath = path.join(outDir, `${table}.parquet`);
+    console.log(`  Exporting ${table}...`);
+
+    const exportCommand = `
+      INSTALL postgres;
+      LOAD postgres;
+      ATTACH '${databaseUrl}' AS pg (TYPE POSTGRES);
+      COPY (SELECT * FROM pg.public.${table})
+      TO '${outputPath}'
+      (FORMAT PARQUET, COMPRESSION ZSTD);
+    `.trim().replace(/\n\s+/g, ' ');
+
+    await $`duckdb -c ${exportCommand}`;
+    console.log(`    ✅ Exported ${table}`);
+  }
 
   console.log(`✅ Finished Parquet export to ${outDir}`);
 }

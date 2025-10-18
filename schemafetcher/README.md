@@ -73,6 +73,61 @@ This creates:
 - `./backups/sql-dumps/dump-<timestamp>.{sql,pgdump}`
 - `./backups/parquet-out/<schema>/<table>.parquet`
 
+## Querying Parquet Files
+
+### CLI
+
+Execute SQL directly against parquet files:
+
+```bash
+duckdb -c "SELECT COUNT(*) FROM 'parquet-out/table.parquet'"
+```
+
+Multiple files with wildcard patterns:
+
+```bash
+duckdb -c "SELECT * FROM 'parquet-out/*.parquet' LIMIT 10"
+```
+
+### Web UI
+
+Launch interactive query interface:
+
+```bash
+duckdb -ui
+```
+
+Opens browser at `http://localhost:4213` with duckdb web dashboard.
+
+Now you can go and run queries by referencing the local file path to your parquet files!
+
+![showcase of duckdb ui to query your data](./docs/duckDB-localUI.png)
+
+### Example Queries
+
+```sql
+-- Row counts by table
+SELECT 'casts' as table, COUNT(*) FROM 'parquet-out/casts.parquet'
+UNION ALL SELECT 'reactions', COUNT(*) FROM 'parquet-out/reactions.parquet'
+UNION ALL SELECT 'links', COUNT(*) FROM 'parquet-out/links.parquet';
+
+-- Recent activity (last 7 days)
+SELECT DATE_TRUNC('day', timestamp) as day, COUNT(*) as count
+FROM 'parquet-out/casts.parquet'
+WHERE timestamp >= CURRENT_DATE - INTERVAL '7 days'
+GROUP BY day ORDER BY day DESC;
+
+-- Join across files
+SELECT c.fid, COUNT(*) as cast_count, COUNT(DISTINCT r.hash) as reactions
+FROM 'parquet-out/casts.parquet' c
+LEFT JOIN 'parquet-out/reactions.parquet' r ON c.hash = r.target_cast_hash
+GROUP BY c.fid
+ORDER BY cast_count DESC
+LIMIT 10;
+```
+
+Parquet format enables column-oriented access. Queries scan only referenced columns.
+
 ## Notes & Next Steps
 
 - Want to customize the DuckDB export manually? Run the same command the script generates:
@@ -80,7 +135,8 @@ This creates:
   ```bash
   duckdb -c "INSTALL postgres; LOAD postgres;
     ATTACH 'postgres://user:pass@host:5432/db' AS pg (TYPE POSTGRES);
-    EXPORT DATABASE 'parquet-out' (FORMAT PARQUET, COMPRESSION ZSTD);"
+    COPY (SELECT * FROM pg.public.table_name)
+    TO 'output.parquet' (FORMAT PARQUET, COMPRESSION ZSTD);"
   ```
 
 - To capture Postgres roles/globals, also run `pg_dumpall --globals-only`.
