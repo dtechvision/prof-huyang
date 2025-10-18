@@ -1,9 +1,9 @@
 # schemafetcher
 
-Utility scripts for working with PostgreSQL schemas in Bun + TypeScript. The CLI wraps two workflows:
+Utility scripts for capturing PostgreSQL backups using Bun + TypeScript. The CLI wraps two workflows:
 
-- `pg_dump` based exports for full-fidelity PostgreSQL backups.
-- Per-table Parquet exports built with Bun's native SQL client and the [`parquets`](https://www.npmjs.com/package/parquets) library.
+- PostgreSQL `pg_dump` exports for full-fidelity backups.
+- Whole-database Parquet exports powered by the DuckDB CLI.
 
 > **Prerequisites**
 >
@@ -11,7 +11,10 @@ Utility scripts for working with PostgreSQL schemas in Bun + TypeScript. The CLI
 > - PostgreSQL client tools (`pg_dump`).  
 >   macOS: `brew install libpq && echo 'export PATH="/opt/homebrew/opt/libpq/bin:$PATH"' >> ~/.zshrc`  
 >   Debian/Ubuntu: `sudo apt-get install postgresql-client`
-> - A `DATABASE_URL` pointing at the database you want to snapshot.
+> - DuckDB CLI (`duckdb`).  
+>   macOS: `brew install duckdb`  
+>   Debian/Ubuntu: `sudo apt install duckdb-cli`
+> - A `DATABASE_URL` pointing at the database you want to snapshot (you will be prompted if it is missing).
 
 ## Installation
 
@@ -21,7 +24,7 @@ bun install
 
 ## Commands
 
-All commands are invoked through Bun:
+All commands are invoked through Bun. If `--database-url` (or `DATABASE_URL`) is omitted you will be prompted interactively:
 
 ```bash
 DATABASE_URL="postgres://user:pass@host:5432/db" bun run index.ts <command> [options]
@@ -38,46 +41,41 @@ bun run index.ts pg-dump --out backups/sql
 Options:
 
 - `--database-url=...` – override `DATABASE_URL`.
-- `--out=dir` – directory for output files (defaults to `sql-dumps`).
+- `--out=dir` or `--out-dir=dir` – directory for output files (defaults to `sql-dumps`).
 - `--skip-sql` – disable the plain-text dump.
 - `--skip-custom` – disable the custom-format dump.
 
 ### `parquet`
 
-Exports every base table to a Parquet file using Bun's native `SQL` adapter and `parquets`.
+Uses DuckDB to attach directly to Postgres and run `EXPORT DATABASE ... (FORMAT PARQUET, COMPRESSION ZSTD)`.
 
 ```bash
-bun run index.ts parquet --out data/parquet --batch-size=25000
+bun run index.ts parquet --out data/parquet
 ```
 
 Options:
 
 - `--database-url=...` – override `DATABASE_URL`.
-- `--out=dir` – directory for Parquet files (defaults to `parquet-out`).
-- `--batch-size=n` – number of rows fetched per round trip (default `50000`).
-- `--schema=public,...` – limit exports to specific schemas.
-- `--table=users,...` – limit exports to specific table names.
+- `--out=dir` or `--out-dir=dir` – directory for Parquet output (defaults to `parquet-out`).
 
-Each table produces `<schema>.<table>.parquet`. Complex types (arrays, JSON, etc.) are stringified; timestamps are stored as ISO strings. Adjust the type mapping in `index.ts` if you need stricter Parquet logical types (e.g., DECIMAL with precision/scale).
+The export mirrors DuckDB’s layout: each schema becomes a subdirectory containing table-level Parquet files and DuckDB metadata.
 
 ### `all`
 
 Runs `pg-dump` followed by `parquet`. Useful for nightly jobs:
 
 ```bash
-bun run index.ts all --out ./backups --batch-size=10000
+bun run index.ts all --out ./backups
 ```
 
 This creates:
 
 - `./backups/sql-dumps/dump-<timestamp>.{sql,pgdump}`
-- `./backups/parquet-out/<schema>.<table>.parquet`
+- `./backups/parquet-out/<schema>/<table>.parquet`
 
 ## Notes & Next Steps
 
-- Want blazing fast Parquet exports without TypeScript? DuckDB can connect directly to Postgres:
-
-Duck DB Install: https://duckdb.org/install
+- Want to customize the DuckDB export manually? Run the same command the script generates:
 
   ```bash
   duckdb -c "INSTALL postgres; LOAD postgres;
@@ -85,5 +83,4 @@ Duck DB Install: https://duckdb.org/install
     EXPORT DATABASE 'parquet-out' (FORMAT PARQUET, COMPRESSION ZSTD);"
   ```
 
-- If you need streaming exports for very large tables, consider swapping `sqlClient.unsafe` with a cursor-based reader (e.g., `pg-query-stream`) or lowering `--batch-size`.
 - To capture Postgres roles/globals, also run `pg_dumpall --globals-only`.
